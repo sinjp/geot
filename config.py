@@ -1,1 +1,1 @@
-config = {'db_url': 'sqlite://'}
+config = {'db_url': 'sqlite:///data/model.sqlite3'}
