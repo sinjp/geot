@@ -1,53 +1,55 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Date, ForeignKey, Integer, Numeric, String
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy import Column, create_engine, Date, ForeignKey, Integer, Numeric, String
+
+from config import config
 
 
-Base = declarative_base()
+class BaseMixin:
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    def __repr__(self):
+        values = ', '.join('{}={!r}'.format(n, getattr(self, n)) for n in self.__table__.c.keys())
+        return '{}({})'.format(self.__class__.__name__, values)
+
+Base = declarative_base(cls=BaseMixin)
+
+
+class PointMixin:
+    COMPANY_ID = Column(
+        String, ForeignKey('company.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    PROJECT_ID = Column(
+        String, ForeignKey('project.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    POINT_ID = Column(
+        String, ForeignKey('point.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
 
 
 class Company(Base):
-    __tableNAME__ = 'company'
-
     ID = Column(String, primary_key=True)
-
-    def __repr__(self):
-        return f'ID={self.ID}'
 
 
 class Client(Base):
-    __tableNAME__ = 'client'
-
     ID = Column(String, primary_key=True)
-
-    def __repr__(self):
-        return f'ID={self.ID}'
 
 
 class Project(Base):
-    __tableNAME__ = 'project'
-
     COMPANY_ID = Column(
-        String, ForeignKey(Company.ID, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+        String, ForeignKey('company.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     ID = Column(String, primary_key=True)
     NAME = Column(String)
-    CLIENT = Column(String, ForeignKey(Client.ID, onupdate='CASCADE', ondelete='SET NULL'))
+    CLIENT = Column(String, ForeignKey('client.id', onupdate='CASCADE', ondelete='SET NULL'))
     LOCATION = Column(String)
     DATUM_VERTICAL = Column(String)
     DATUM_HORIZONTAL = Column(String)
     DATUM_HORIZONTAL_ZONE = Column(String)
 
-    def __repr__(self):
-        return (f'ID={self.ID}, NAME={self.NAME}, CLIENT={self.CLIENT}, '
-                f'LOCATION={self.LOCATION}')
-
 
 class Point(Base):
-    __tableNAME__ = 'point'
-
     COMPANY_ID = Column(
-        String, ForeignKey(Company.ID, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+        String, ForeignKey('company.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     PROJECT_ID = Column(
-        String, ForeignKey(Project.ID, onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+        String, ForeignKey('project.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     ID = Column(String, primary_key=True)
     TYPE = Column(String)
     LOGGED_BY = Column(String)
@@ -70,6 +72,6 @@ class Point(Base):
     PIT_WIDTH = Column(Numeric(precision=2), default=None)
     PAGE_DEPTH = Column(Integer, default=6)
 
-    def __repr__(self):
-        return (f'ID={self.ID}, TYPE={self.TYPE}, STATUS={self.STATUS}, '
-                f'FINAL_DEPTH={self.FINAL_DEPTH}')
+
+if __name__ == '__main__':
+    engine = create_engine(config['db_url'])  # in-memory db
