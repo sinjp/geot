@@ -1,0 +1,9 @@
+Bottleneck>=1.2.0
+numexpr>=2.6.1
+numpy>=1.11.3+mkl
+pandas>=0.19.1
+pyproj>=1.9.5.1
+python-dateutil>=2.6.0
+pytz>=2016.10
+six>=1.10.0
+SQLAlchemy>=1.1.4
