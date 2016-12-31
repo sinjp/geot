@@ -146,6 +146,20 @@ class ROCK_DISC_SPACING(Base, PointMixin, DepthIntervalMixin):
 
 
 # Field testing
+class SPT(Base, PointMixin, DepthIntervalMixin):
+    BLOWS_SEAT = Column(String, nullable=False)
+    BLOWS_TEST1 = Column(String)
+    BLOWS_TEST2 = Column(String)
+    HAMMER_BOUNCE = Column(Boolean, default=False, nullable=False)
+    PEN_SEAT = Column(Integer, nullable=False)
+    PEN_TEST1 = Column(Integer)
+    PEN_TEST2 = Column(Integer)
+    N = Column(Integer)
+    N_INTERP = Column(Integer)
+    REMARK = Column(String)
+    REPORT = Column(String)
+
+
 class LFWD(Base, PointMixin):
     TOP = Column(Numeric(precision=2), primary_key=True)
     MODULUS_MPa = Column(Numeric(precision=1), nullable=False)
@@ -192,10 +206,59 @@ class SpecimenMixin:
 
 
 # Laboratory testing
-class POINT_LOAD_INDEX(Base, PointMixin, SampleMixin, SpecimenMixin):
+class PLI(Base, PointMixin, SampleMixin, SpecimenMixin):
     TYPE = Column(String, primary_key=True)
     IS50_MPa = Column(Numeric(precision=2), nullable=False)
     DEFECT = Column(Boolean, default=False, nullable=False)
+
+
+class UCS(Base, PointMixin, SampleMixin, SpecimenMixin):
+    UCS_MPa = Column(Numeric(precision=2), nullable=False)
+    MODULUS_SECANT_GPa = Column(Numeric(precision=2))
+    MODULUS_TANGENT_GPa = Column(Numeric(precision=2))
+    DEFECT = Column(Boolean, default=False, nullable=False)
+
+
+class WATER_CONTENT(Base, PointMixin, SampleMixin, SpecimenMixin):
+    MC = Column(Numeric(precision=1))
+    MC_VOLUMETRIC = Column(Numeric(precision=1))
+
+
+class ATTERBERG_LIMITS(Base, PointMixin, SampleMixin, SpecimenMixin):
+    LL = Column(Numeric(precision=1))
+    PL = Column(Numeric(precision=1))
+    PI = Column(Numeric(precision=1))
+    LS = Column(Numeric(precision=1))
+
+
+class GRADING_SUMMARY(Base, PointMixin, SampleMixin, SpecimenMixin):
+    PERC_OVERSIZE = Column(Integer)
+    PERC_GRAVEL = Column(Integer)
+    PERC_SAND = Column(Integer)
+    PERC_FINES = Column(Integer)
+    PERC_SILT = Column(Integer)
+    PERC_CLAY = Column(Integer)
+
+
+class GRADING_DATA(Base, PointMixin, SampleMixin, SpecimenMixin):
+    GRADING_SUMMARY_SPECIMEN_TOP = Column(String, ForeignKey(
+        'GRADING_SUMMARY.SPECIMEN_TOP', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    SIZE_mm = Column(Numeric(precision=3), nullable=False)
+    PERC_PASSING = Column(Integer, nullable=False)
+
+
+class CBR(Base, PointMixin, SampleMixin, SpecimenMixin):
+    TYPE = Column(String, nullable=False)
+    CBR = Column(Numeric(precision=1), nullable=False)
+    SWELL = Column(Numeric(precision=1))
+
+
+class AGGRESSIVITY(Base, PointMixin, SampleMixin, SpecimenMixin):
+    pH = Column(Numeric(precision=1))
+    SO4_ppm = Column(Integer)
+    Cl_ppm = Column(Integer)
+    CONDUCTIVITY_μS_cm = Column(Integer)
+    SOLUBLE_SALTS_ppm = Column(Integer)
 
 
 if __name__ == '__main__':
