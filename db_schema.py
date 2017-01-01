@@ -19,19 +19,21 @@ Base = declarative_base(cls=BaseMixin)
 
 # Metadata
 class COMPANY(Base):
-    ID = Column(String, primary_key=True)
+    COMPANY_ID = Column(String, primary_key=True)
 
 
 class CLIENT(Base):
-    ID = Column(String, primary_key=True)
+    CLIENT_ID = Column(String, primary_key=True)
 
 
 class PROJECT(Base):
     COMPANY_ID = Column(
-        String, ForeignKey('COMPANY.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
-    ID = Column(String, primary_key=True)
+        String, ForeignKey('COMPANY.COMPANY_ID', onupdate='CASCADE', ondelete='CASCADE'),
+        primary_key=True)
+    PROJECT_ID = Column(String, primary_key=True)
     NAME = Column(String, nullable=False)
-    CLIENT_ID = Column(String, ForeignKey('CLIENT.ID', onupdate='CASCADE', ondelete='SET NULL'))
+    CLIENT_ID = Column(
+        String, ForeignKey('CLIENT.CLIENT_ID', onupdate='CASCADE', ondelete='SET NULL'))
     LOCATION = Column(String)
     DATUM_VERTICAL = Column(String)
     DATUM_HORIZONTAL = Column(String)
@@ -41,7 +43,7 @@ class PROJECT(Base):
 class POINT(Base):
     COMPANY_ID = Column(String, primary_key=True)
     PROJECT_ID = Column(String, primary_key=True)
-    ID = Column(String, primary_key=True)
+    POINT_ID = Column(String, primary_key=True)
     TYPE = Column(String, nullable=False)
     LOGGED_BY = Column(String)
     CHECKED_BY = Column(String)
@@ -63,7 +65,7 @@ class POINT(Base):
     PIT_WIDTH = Column(Numeric(precision=2), default=None)
     PAGE_DEPTH = Column(Integer, default=6)
     __table_args__ = (ForeignKeyConstraint([COMPANY_ID, PROJECT_ID],
-                                           [PROJECT.COMPANY_ID, PROJECT.ID],
+                                           [PROJECT.COMPANY_ID, PROJECT.PROJECT_ID],
                                            onupdate='CASCADE', ondelete='CASCADE'),
                       {})
 
@@ -84,7 +86,7 @@ class PointMixin:
     @declared_attr
     def __table_args__(cls):
         return (ForeignKeyConstraint([cls.COMPANY_ID, cls.PROJECT_ID, cls.POINT_ID],
-                                     [POINT.COMPANY_ID, POINT.PROJECT_ID, POINT.ID],
+                                     [POINT.COMPANY_ID, POINT.PROJECT_ID, POINT.POINT_ID],
                                      onupdate='CASCADE', ondelete='CASCADE'),
                 {})
 
