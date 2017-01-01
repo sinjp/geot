@@ -31,7 +31,7 @@ class PROJECT(Base):
         String, ForeignKey('COMPANY.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
     ID = Column(String, primary_key=True)
     NAME = Column(String, nullable=False)
-    CLIENT = Column(String, ForeignKey('CLIENT.ID', onupdate='CASCADE', ondelete='SET NULL'))
+    CLIENT_ID = Column(String, ForeignKey('CLIENT.ID', onupdate='CASCADE', ondelete='SET NULL'))
     LOCATION = Column(String)
     DATUM_VERTICAL = Column(String)
     DATUM_HORIZONTAL = Column(String)
