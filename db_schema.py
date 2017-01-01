@@ -1,5 +1,6 @@
+from sqlalchemy import (Boolean, Column, create_engine, Date, ForeignKey, Integer, Numeric,
+                        String, ForeignKeyConstraint)
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy import Boolean, Column, create_engine, Date, ForeignKey, Integer, Numeric, String
 
 from config import config
 
@@ -38,10 +39,8 @@ class PROJECT(Base):
 
 
 class POINT(Base):
-    COMPANY_ID = Column(
-        String, ForeignKey('COMPANY.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
-    PROJECT_ID = Column(
-        String, ForeignKey('PROJECT.ID', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+    COMPANY_ID = Column(String, primary_key=True)
+    PROJECT_ID = Column(String, primary_key=True)
     ID = Column(String, primary_key=True)
     TYPE = Column(String, nullable=False)
     LOGGED_BY = Column(String)
@@ -63,23 +62,31 @@ class POINT(Base):
     PIT_LENGTH = Column(Numeric(precision=2), default=None)
     PIT_WIDTH = Column(Numeric(precision=2), default=None)
     PAGE_DEPTH = Column(Integer, default=6)
+    __table_args__ = (ForeignKeyConstraint([COMPANY_ID, PROJECT_ID],
+                                           [PROJECT.COMPANY_ID, PROJECT.ID],
+                                           onupdate='CASCADE', ondelete='CASCADE'),
+                      {})
 
 
 class PointMixin:
-    @declared_attr
+    @declared_attr.cascading
     def COMPANY_ID(cls):
-        return Column(String, ForeignKey('COMPANY.ID', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(String, primary_key=True)
 
-    @declared_attr
+    @declared_attr.cascading
     def PROJECT_ID(cls):
-        return Column(String, ForeignKey('PROJECT.ID', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(String, primary_key=True)
+
+    @declared_attr.cascading
+    def POINT_ID(cls):
+        return Column(String, primary_key=True)
 
     @declared_attr
-    def POINT_ID(cls):
-        return Column(String, ForeignKey('POINT.ID', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+    def __table_args__(cls):
+        return (ForeignKeyConstraint([cls.COMPANY_ID, cls.PROJECT_ID, cls.POINT_ID],
+                                     [POINT.COMPANY_ID, POINT.PROJECT_ID, POINT.ID],
+                                     onupdate='CASCADE', ondelete='CASCADE'),
+                {})
 
 
 class DepthIntervalMixin:
@@ -99,6 +106,7 @@ class GEOLOGY(Base, PointMixin, DepthIntervalMixin):
     MATERIAL = Column(String)
     COLOUR = Column(String)
     DESCRIPTION = Column(String)
+    MOISTURE = Column(String)
 
 
 class DEPTH_REMARKS(Base, PointMixin, DepthIntervalMixin):
@@ -168,70 +176,86 @@ class LFWD(Base, PointMixin):
 
 # Samples and specimens for laboratory testing
 class SAMPLE(Base, PointMixin, DepthIntervalMixin):
-    TYPE = Column(String)
-    REF = Column(String)
+    TYPE = Column(String, primary_key=True)
+    REF = Column(String, primary_key=True)
 
 
-class SampleMixin:
-    @declared_attr
+class SampleMixin(PointMixin):
+    @declared_attr.cascading
     def SAMPLE_TOP(cls):
-        return Column(String, ForeignKey('SAMPLE.TOP', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(Numeric(precision=2), primary_key=True)
 
-    @declared_attr
+    @declared_attr.cascading
     def SAMPLE_TYPE(cls):
-        return Column(String, ForeignKey('SAMPLE.TYPE', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(String, primary_key=True)
 
-    @declared_attr
+    @declared_attr.cascading
     def SAMPLE_REF(cls):
-        return Column(String, ForeignKey('SAMPLE.REF', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(String, primary_key=True)
 
-
-class SPECIMEN(Base, PointMixin, DepthIntervalMixin, SampleMixin):
-    REF = Column(String)
-
-
-class SpecimenMixin:
     @declared_attr
+    def __table_args__(cls):
+        return (ForeignKeyConstraint([cls.COMPANY_ID, cls.PROJECT_ID, cls.POINT_ID,
+                                      cls.SAMPLE_TOP, cls.SAMPLE_TYPE, cls.SAMPLE_REF],
+                                     [SAMPLE.COMPANY_ID, SAMPLE.PROJECT_ID, SAMPLE.POINT_ID,
+                                      SAMPLE.TOP, SAMPLE.TYPE, SAMPLE.REF],
+                                     onupdate='CASCADE', ondelete='CASCADE'),
+                {})
+
+
+class SPECIMEN(Base, SampleMixin, DepthIntervalMixin):
+    REF = Column(String, primary_key=True)
+
+
+class SpecimenMixin(SampleMixin):
+    @declared_attr.cascading
     def SPECIMEN_TOP(cls):
-        return Column(String, ForeignKey('SPECIMEN.TOP', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+        return Column(Numeric(precision=2), primary_key=True)
+
+    @declared_attr.cascading
+    def SPECIMEN_REF(cls):
+        return Column(String, primary_key=True)
 
     @declared_attr
-    def SPECIMEN_REF(cls):
-        return Column(String, ForeignKey('SPECIMEN.REF', onupdate='CASCADE', ondelete='CASCADE'),
-                      primary_key=True)
+    def __table_args__(cls):
+        return (ForeignKeyConstraint(
+            [cls.COMPANY_ID, cls.PROJECT_ID, cls.POINT_ID,
+             cls.SAMPLE_TOP, cls.SAMPLE_TYPE, cls.SAMPLE_REF,
+             cls.SPECIMEN_TOP, cls.SPECIMEN_REF],
+            [SPECIMEN.COMPANY_ID, SPECIMEN.PROJECT_ID, SPECIMEN.POINT_ID,
+             SPECIMEN.SAMPLE_TOP, SPECIMEN.SAMPLE_TYPE, SPECIMEN.SAMPLE_REF,
+             SPECIMEN.TOP, SPECIMEN.REF],
+            onupdate='CASCADE', ondelete='CASCADE'),
+            {})
 
 
 # Laboratory testing
-class PLI(Base, PointMixin, SampleMixin, SpecimenMixin):
-    TYPE = Column(String, primary_key=True)
+class PLI(Base, SpecimenMixin):
+    TYPE = Column(String, nullable=False)
     IS50_MPa = Column(Numeric(precision=2), nullable=False)
     DEFECT = Column(Boolean, default=False, nullable=False)
 
 
-class UCS(Base, PointMixin, SampleMixin, SpecimenMixin):
+class UCS(Base, SpecimenMixin):
     UCS_MPa = Column(Numeric(precision=2), nullable=False)
     MODULUS_SECANT_GPa = Column(Numeric(precision=2))
     MODULUS_TANGENT_GPa = Column(Numeric(precision=2))
     DEFECT = Column(Boolean, default=False, nullable=False)
 
 
-class WATER_CONTENT(Base, PointMixin, SampleMixin, SpecimenMixin):
+class WATER_CONTENT(Base, SpecimenMixin):
     MC = Column(Numeric(precision=1))
     MC_VOLUMETRIC = Column(Numeric(precision=1))
 
 
-class ATTERBERG_LIMITS(Base, PointMixin, SampleMixin, SpecimenMixin):
+class ATTERBERG_LIMITS(Base, SpecimenMixin):
     LL = Column(Numeric(precision=1))
     PL = Column(Numeric(precision=1))
     PI = Column(Numeric(precision=1))
     LS = Column(Numeric(precision=1))
 
 
-class GRADING_SUMMARY(Base, PointMixin, SampleMixin, SpecimenMixin):
+class GRADING_SUMMARY(Base, SpecimenMixin):
     PERC_OVERSIZE = Column(Integer)
     PERC_GRAVEL = Column(Integer)
     PERC_SAND = Column(Integer)
@@ -240,20 +264,27 @@ class GRADING_SUMMARY(Base, PointMixin, SampleMixin, SpecimenMixin):
     PERC_CLAY = Column(Integer)
 
 
-class GRADING_DATA(Base, PointMixin, SampleMixin, SpecimenMixin):
-    GRADING_SUMMARY_SPECIMEN_TOP = Column(String, ForeignKey(
-        'GRADING_SUMMARY.SPECIMEN_TOP', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True)
+class GRADING_DATA(Base, SpecimenMixin):
     SIZE_mm = Column(Numeric(precision=3), nullable=False)
     PERC_PASSING = Column(Integer, nullable=False)
+    __table_args__ = (ForeignKeyConstraint(
+        ['COMPANY_ID', 'PROJECT_ID', 'POINT_ID',
+         'SAMPLE_TOP', 'SAMPLE_TYPE', 'SAMPLE_REF',
+         'SPECIMEN_TOP', 'SPECIMEN_REF'],
+        [GRADING_SUMMARY.COMPANY_ID, GRADING_SUMMARY.PROJECT_ID, GRADING_SUMMARY.POINT_ID,
+         GRADING_SUMMARY.SAMPLE_TOP, GRADING_SUMMARY.SAMPLE_TYPE, GRADING_SUMMARY.SAMPLE_REF,
+         GRADING_SUMMARY.SPECIMEN_TOP, GRADING_SUMMARY.SPECIMEN_REF],
+        onupdate='CASCADE', ondelete='CASCADE'),
+        {})
 
 
-class CBR(Base, PointMixin, SampleMixin, SpecimenMixin):
+class CBR(Base, SpecimenMixin):
     TYPE = Column(String, nullable=False)
     CBR = Column(Numeric(precision=1), nullable=False)
     SWELL = Column(Numeric(precision=1))
 
 
-class AGGRESSIVITY(Base, PointMixin, SampleMixin, SpecimenMixin):
+class AGGRESSIVITY(Base, SpecimenMixin):
     pH = Column(Numeric(precision=1))
     SO4_ppm = Column(Integer)
     Cl_ppm = Column(Integer)
@@ -262,5 +293,12 @@ class AGGRESSIVITY(Base, PointMixin, SampleMixin, SpecimenMixin):
 
 
 if __name__ == '__main__':
-    engine = create_engine(config['db_url'])
-    Base.metadata.create_all(engine)
+    # # Sqlite
+    # con = create_engine(config['db_url'], echo=True)
+
+    # Postgres
+    from db_helper import connect_postgres
+    con, meta = connect_postgres()
+
+    Base.metadata.drop_all(con)
+    Base.metadata.create_all(con)
